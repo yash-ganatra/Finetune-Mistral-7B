@@ -3,19 +3,11 @@ from datasets import load_dataset
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 import torch
 
-# === Config ===
 MODEL_PATH = "./Mistral-7B-Instruct-v0.2"  
 DATA_PATH = "final_finetune_prompts.jsonl"       
 OUTPUT_DIR = "./mistral7b-finetuned"
 
-print("=" * 60)
-print("MISTRAL 7B FINE-TUNING SCRIPT")
-print("=" * 60)
 
-# === Step 1: Load and Prepare Dataset ===
-print("Step 1: Preparing dataset...")
-
-# === Step 2: Load Tokenizer and Model ===
 print("Step 2: Loading Model....")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=True)
 tokenizer.pad_token = tokenizer.eos_token
@@ -26,13 +18,12 @@ def format_and_tokenize(example):
     # Format the text
     formatted_text = f"### Instruction:\n{example['prompt']}\n\n### Response:\n{example['response']}"
     
-    # Tokenize and return only the tokenized fields
+
     tokenized = tokenizer(
         formatted_text, 
         padding=False, 
         truncation=True, 
-        max_length=512,  # Add max_length to prevent extremely long sequences
-        return_tensors=None  # Keep as lists, not tensors
+        max_length=512,  
     )
     
     # Set labels to be the same as input_ids for causal language modeling
@@ -43,7 +34,7 @@ def format_and_tokenize(example):
 # Apply formatting and tokenization, removing original columns
 data = data.map(
     format_and_tokenize,
-    remove_columns=data.column_names,  # Remove original columns to avoid conflicts
+    remove_columns=data.column_names,  
     batched=False
 )
 
@@ -63,7 +54,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.float16
 )
 
-# === Step 3: Apply QLoRA Configuration ===
+
 print("Step 3: Applying QLoRA Config")
 model = prepare_model_for_kbit_training(model)
 
@@ -78,10 +69,10 @@ lora_config = LoraConfig(
 
 model = get_peft_model(model, lora_config)
 
-# Print trainable parameters
+
 model.print_trainable_parameters()
 
-# === Step 4: Set Training Arguments ===
+
 print('Step 4: Setting training Arguments')
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
@@ -94,18 +85,18 @@ training_args = TrainingArguments(
     fp16=True,
     optim="paged_adamw_32bit",
     remove_unused_columns=False,
-    dataloader_drop_last=True,  # Drop incomplete batches
-    report_to=None,  # Disable wandb/tensorboard logging
+    dataloader_drop_last=True, 
+    report_to=None,  
 )
 
-# === Step 5: Fine-Tune ===
+
 print("Step 5: Starting Fine-tuning...")
 print("This may take a while depending on your dataset size and hardware...")
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, 
     mlm=False,
-    pad_to_multiple_of=8  # Optional: pad to multiple of 8 for better performance
+    pad_to_multiple_of=8 
 )
 
 trainer = Trainer(
@@ -125,8 +116,3 @@ tokenizer.save_pretrained(OUTPUT_DIR)
 print("=" * 60)
 print("✅ TRAINING COMPLETED SUCCESSFULLY!")
 print(f"✅ Model saved to: {OUTPUT_DIR}")
-print("=" * 60)
-print("Next steps:")
-print("1. Restart your Python environment to clear GPU memory")
-print("2. Run 'python inference_mistral.py' to test your fine-tuned model")
-print("=" * 60)

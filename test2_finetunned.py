@@ -97,10 +97,7 @@ Render the image {final_style} and {tone_modifier}."""
     generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
     super_prompt = generated_text.split("Super Prompt:")[-1].strip()
 
-    return super_prompt
 
-
-# === EXAMPLE RUN ===
 if __name__ == "__main__":
     model_path = "path/to/your/fine-tuned-mistral"
 
@@ -113,5 +110,5 @@ if __name__ == "__main__":
         strict_mode=True
     )
 
-    print("\n🎨 Generated Super Prompt:\n")
+    print("\n Generated Super Prompt:\n")
     print(result)
